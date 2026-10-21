@@ -1,5 +1,4 @@
-# Mobile App Development - Project 1
-# App Name
+# Mobile App Development - Project 1<br>Campus Challenge App
 
 ## Project Overview
 ### Scope
