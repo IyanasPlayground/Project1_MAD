@@ -76,7 +76,7 @@ The baseline method selects missions by ID order. Testing compares the rule-base
 - Core mission tracking must work offline.
 
 ## Technology Stack
-*   **Language(s)**:Dart
+*   **Language(s):** Dart
 * **Frontend:** Flutter
 * **Backend/Application Logic:** Dart application services for challenge management, progress tracking, validation, completion calculations, filtering, and Mission Match.
 * **Local Database:** SQLite for persistent challenge and progress-log records.
