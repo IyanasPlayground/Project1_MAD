@@ -85,7 +85,7 @@ The baseline method selects missions by ID order. Testing compares the rule-base
 
 ## Team Members
 1. Janiya Green
-2. Iyana Iyana Halliburton
+2. Iyana Halliburton
 
 ## Primary Work Distribution
 | # | Name | Focus | Backup Reviewer |
