@@ -36,9 +36,12 @@ created my own, it really helped me understand our personal checklist.
 
 Entry 2: Bottom Navigation Bar & Navigator Routing Issue
 
-Date: October 28, 2026
+Date: October 28, 2026 - 31st
 Tool: Gemini
 Prompt/Query: "How do I switch tabs in a Flutter BottomNavigationBar without pushing duplicate screens onto the Navigator stack? I current have it set on each page vs having a menu file to be inherited on each page, but when i test, the clicks don't work and take me to another page"
+Update: "I reread the instructions "The home page stays at the site root. Related pages are grouped below; shared styles/scripts remain in assets. Use the navigation links rather than old bookmarks to root-level companion pages."
+and I am sure i can use navigation.push so i will remove anything related to index. If i run into errors again, pls help mefind the big faster. the last bug was it not working but it should with it being defined exactly by the state, 
+\yes? Instead of my past approack of Icons, I will add a lower container so it is lower." 
 Output & Application: Basically told me to replace Navigator.push() calls inside the onTap handler with an _currentIndex state variable that updates the body using IndexedStack (or a switch statement). 
 Update: Still not working so I tried a new chat and I know I am mapping _currentIndex = index; correctly, inside your onTap handler, the body is hardcoded to your home page SafeArea / SingleChildScrollView. 
 This is basically why the buttons will animate but not change the screen and navigate away. 
@@ -49,8 +52,12 @@ so your app knows what options it has. You need to swap out the scaffold body: I
 passing it your _currentIndex variable (body: IndexedStack(index: _currentIndex, children: pages)).You need to keep your navigation bar intact: You don't need to change your bottomNavigationBar at all
 because your onTap handler is already successfully updating _currentIndex whenever a user clicks an icon!If you used a normal conditional check or list lookup, switching tabs would destroy the old 
 page and recreate it from scratch.
-Learning: I was thinking of buttons and refering to the hallowween assignment and may have been confused with the navigation as i tried to fix myself. A Scaffold body that is hardcoded to a single static
-view won't change when I tap the low menu. The body had no dynamic list or `IndexedStack` to render different screens even though they were made and main had a tiny job. 
+Update output: "If your assignment specifically expects full page route pushes rather than tab-index state switching, using standard Navigator.push() calls inside your onTap (or via custom button handlers) is the right move. 
+When you remove the _currentIndex state logic and switch to pure route pushes. Make sure your button or navigation bar tap handlers are calling Navigator.push with a fresh MaterialPageRoute"
+Learning: At first, I was trying to het my navigation to work with  a bottom navigation index switcher. I originally have regular icons for them but they need to be below the page and not near the other aspects.
+With Ai's help I learned more about index for the future. A standard Scaffold body hardcoded to a single static view doesn't change when tapping bottom menu buttons without an IndexedStack or list. I used
+the past activity for Halloween and modified the app to use Navigator.push. It lets users transition to pages like settings without only using the back buttons. This took me a long time to trouble shoot
+dispite how simple it feels but I believe I was overthinking.
 
 
 Entry 3: SQL neeeds
