@@ -1,0 +1,15 @@
+Entry 1: Bottom Navigation Bar & Navigator Routing Issue
+
+Date: October 28, 2026
+Tool: Gemini
+Prompt/Query: "How do I switch tabs in a Flutter BottomNavigationBar without pushing duplicate screens onto the Navigator stack? I current have it set on each page vs having a menu file to be inherited on each page, but when i test, the clicks don't work and take me to another page"
+Output & Application: Replaced Navigator.push() calls inside the onTap handler with an _currentIndex state variable that updates the body using IndexedStack (or a switch statement).
+
+
+Entry 2: SQL neeeds
+
+Date: October 31, 2026
+Tool: Gemini
+Prompt/Query: Why is my SQL not saving when it's tied correctly?
+Outcome: still coming 
+
