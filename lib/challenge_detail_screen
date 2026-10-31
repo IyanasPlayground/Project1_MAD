@@ -1,0 +1,251 @@
+import 'package:flutter/material.dart';
+import 'create_edit_screen.dart';  
+
+class ChallengeDetailScreen extends StatefulWidget {
+  final Challenge challenge;
+
+  const ChallengeDetailScreen({Key? key, required this.challenge}) 
+  : super(key: key);
+
+  @override
+  State<ChallengeDetailScreen> createState() => _ChallengeDetailScreenState();
+}
+
+class _ChallengeDetailScreenState extends State<ChallengeDetailScreen> {
+  final TextEditingController _noteController = TextEditingController();
+
+  void _addNote() {
+    if (_noteController.text.trim().isEmpty) return;
+    setState(() {
+      widget.challenge.notes.add(_noteController.text.trim());
+      _noteController.clear();
+    });
+  }
+
+  void _finishActivity(int index) {
+    setState(() {
+      widget.challenge.activities[index].isCompleted = 
+          !widget.challenge.activities[index].isCompleted;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    int totalActivities = widget.challenge.activities.length;
+    int completedActivities = widget.challenge.activities.where((a) => a.isCompleted).length;
+    double progressPercent = 0.0;
+    if (totalActivities > 0) {
+      progressPercent = completedActivities / totalActivities;
+    } else {
+      if (widget.challenge.isCompleted) {
+        progressPercent = 1.0; 
+      } else {
+        progressPercent = 0.0; 
+      }
+    }
+    String progressText = '$completedActivities/$totalActivities';
+
+    return Scaffold(
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios, 
+          color: Colors.black),
+          onPressed: () => Navigator.pop(context),
+        ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.home_outlined, 
+            color: Colors.black, size: 28),
+            onPressed: () => Navigator.popUntil(context, (route) => route.isFirst),
+          ),
+        ],
+      ),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Challenge Details',
+                style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: Colors.black87),
+              ),
+              const SizedBox(height: 16),
+
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.purple,
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.star_outline, color: Colors.purple),
+                  ),
+                  const SizedBox(width: 12),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        widget.challenge.title,
+                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 4),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: Colors.teal,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          widget.challenge.category,
+                          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.black87),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+
+              Text(
+                widget.challenge.description.isEmpty
+                    ? 'Challenge details go here so the user knows what is included and how to complete.'
+                    : widget.challenge.description,
+                style: TextStyle(fontSize: 14, color: Colors.grey),
+              ),
+              const SizedBox(height: 24),
+
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Progress',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                  ),
+                  Text(
+                    progressText,
+                    style: const TextStyle(color: Colors.grey, fontSize: 13),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: LinearProgressIndicator(
+                  value: progressPercent,
+                  backgroundColor: Colors.purple,
+                  valueColor: const AlwaysStoppedAnimation<Color>(Colors.green),
+                  minHeight: 8,
+                ),
+              ),
+              const SizedBox(height: 24),
+
+              const Text(
+                'Activity Log',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+              ),
+              const SizedBox(height: 8),
+              
+              Container(
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.grey),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: widget.challenge.activities.isEmpty
+                    ? const Padding(
+                        padding: EdgeInsets.all(16),
+                        child: Text('None'),
+                      )
+                    : ListView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: widget.challenge.activities.length,
+                        itemBuilder: (context, index) {
+                          final activity = widget.challenge.activities[index];
+                          return InkWell(
+                            onTap: () => _finishActivity(index),
+                            child: _buildLogItem(
+                              activity.title,
+                              activity.isCompleted ? 'Completed' : 'Pending',
+                              activity.isCompleted,
+                            ),
+                          );
+                        },
+                      ),
+              ),
+
+
+              const Text(
+                'Notes',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+              ),
+              const SizedBox(height: 8),
+
+              for (final note in widget.challenge.notes)
+               Card(
+                      margin: const EdgeInsets.only(bottom: 8),
+                      child: ListTile(
+                        title: Text(note),
+                        leading: const Icon(Icons.note, color: Colors.green),
+                      ),
+                    ),
+                const SizedBox(height: 8),
+
+
+              TextField(
+                controller: _noteController,
+                decoration: InputDecoration(
+                  hintText: 'Add Text',
+                  hintStyle: TextStyle(color: Colors.grey),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: BorderSide(color: Colors.grey),
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                ),
+              ),
+              const SizedBox(height: 12),
+              SizedBox(
+                child: ElevatedButton(
+                  onPressed: _addNote,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
+                  child: const Text('Save Note', style: TextStyle(color: Colors.white)),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLogItem(String title, String subtitle, bool isDone) {
+    return Padding(
+      padding: const EdgeInsets.all(12.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(title, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 2),
+              Text(subtitle, style: TextStyle(fontSize: 11, color: Colors.grey)),
+            ],
+          ),
+          Icon(
+            isDone ? Icons.check_box : Icons.check_box_outline_blank,
+            color: isDone ? Colors.green : Colors.grey,
+          ),
+        ],
+      ),
+    );
+  }
+}
