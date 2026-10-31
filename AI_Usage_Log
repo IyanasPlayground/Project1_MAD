@@ -60,10 +60,19 @@ the past activity for Halloween and modified the app to use Navigator.push. It l
 dispite how simple it feels but I believe I was overthinking.
 
 
-Entry 3: SQL neeeds
+Entry 3: SQL not working correctly despite simplicity
 
 Date: October 31, 2026
 Tool: Gemini
-Prompt/Query: Why is my SQL not saving when it's tied correctly?
-Outcome: still coming. still struggling so i wil start fresh based on sql assignment 08 
-
+Prompt/Query: Why is my SQL not saving when it's tied correctly? why is my sql not working. i made it exactly like the 
+sql code the teacher added to the project site and used the exact example format but put my vairable. 
+Outcome: "When you see a YAML error like Duplicate mapping key during flutter pub get, it means you accidentally typed 
+the word dependencies: two (or more) times in your pubspec.yaml file.   YAML is a strict configuration language, and it
+doesn't allow the same category name (mapping key) to appear more than once at the same level. When Flutter tries to read
+the file, it gets confused by the duplicate section and crashes."
+"You have two top-level dependencies: keys declared in your pubspec.yaml file (most likely one near line 38 and another
+further down when adding sqflite, path, or other packages). YAML files only allow each root key to exist once."
+Key Learning: ensure after "flutter pub add sqflite path", I need to make sure  am updating the flutter sql information 
+correctly pbased on output. Also I learned to ensure format was clear. We worked with a template pubspec and I was too trusting of it
+. I started adding the values and did not read over the whole code assuming is would work because it was a nearly empty file,
+but it was not updated yet.
