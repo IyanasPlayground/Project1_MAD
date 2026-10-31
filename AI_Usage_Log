@@ -1,15 +1,62 @@
-Entry 1: Bottom Navigation Bar & Navigator Routing Issue
+Entry 1: Pls help me understand all tasks that need to be completed (and how to know I'm not giving too much to 1 person)
+
+Date: October 16, 2026
+Tool: Gemini
+Prompt/Query: "Help draft tasks for a Flutter Campus Challenge app. I feel like I'm missing stuff in the checklist. I was going to do milestone by milestone. I have the ui and big stuff, but what am I not thinking about for each item. Pls say it simple so I dont have to read alot (with file submissions copied)."
+Output & Application: Youre right. Building a complete, grade-ready submission for a Flutter application requires balancing core app development with rigorous documentation, AI integration proof, ClickUp task tracing, and video presentation guidelines. 
+The milestones are clear: Milestone 1: Proposal, Architecture & Initial Setup, Milestone 2: UI, Navigation & Presentation Enhancement, Core Functionality, Database & AI Helper, and Milestone 4: Final Packaging & Video Production. Here are some tasks you may want to add:
+- [ ] Define Problem Statement, Inputs/Outputs, and User Roles
+- [ ] Set up ClickUp Board, policies, and take **Snapshot #1**
+- [ ] Draft `AI_FEATURE.md` (Rationale, baseline, offline fallback plan)
+- [ ] Obtain Instructor Approval before starting full development
+- [ ] Assign individual ClickUp UI tasks with member task IDs & take **Snapshot #2**
+- [ ] Implement responsive UI with named route navigation
+- [ ] Add visual enhancements & animations:
+  - [ ] Implicit animations (`AnimatedContainer` / `AnimatedOpacity`)
+  - [ ] Visual transforms (`Transform.scale` / `CustomPainter`)
+- [ ] Build local database CRUD (SQLite/Hive/Firebase) with persistent models
+- [ ] Implement AI Smart Helper (`AI_FEATURE.md`):
+  - [ ] Integrate smart algorithm/AI service
+  - [ ] Handle error states & counterexamples
+  - [ ] Build offline fallback mode & user toggle switch in settings
+- [ ] Run test suite (Unit + Widget tests) & update bug tracking matrix
+- [ ] Link member PRs/commits to ClickUp task IDs & take **Snapshot #3**
+- [ ] Build tested release binary (`flutter build apk --release`)
+- [ ] Take ClickUp **Snapshot #4** and generate `Kanban_Contribution_Evidence.pdf`
+- [ ] Upload Questions-Only Word Doc (`.docx`, 10–15 questions) to iCollege *before* recording
+- [ ] Record 20–25 Min Team Video (Zoom/Teams/WebEx):
+  - [ ] Ensure 100% member participation
+  - [ ] Include code snippets on slides (Animations, CRUD, AI)
+  - [ ] Live demo of Release APK running AI feature (R4 requirement)
+  - [ ] Answer Q&A set live in the video
+- [ ] Upload video to YouTube (Title: `Task Name_Team Name`) & submit all links/ZIP in iCollege
+Key Learning: We learned how to better down the flutter/app project into distinct screen roles and database data models early clarifies task ownership across team members. Even if I did not go with these exact tasks and 
+created my own, it really helped me understand our personal checklist.
+
+
+Entry 2: Bottom Navigation Bar & Navigator Routing Issue
 
 Date: October 28, 2026
 Tool: Gemini
 Prompt/Query: "How do I switch tabs in a Flutter BottomNavigationBar without pushing duplicate screens onto the Navigator stack? I current have it set on each page vs having a menu file to be inherited on each page, but when i test, the clicks don't work and take me to another page"
-Output & Application: Replaced Navigator.push() calls inside the onTap handler with an _currentIndex state variable that updates the body using IndexedStack (or a switch statement).
+Output & Application: Basically told me to replace Navigator.push() calls inside the onTap handler with an _currentIndex state variable that updates the body using IndexedStack (or a switch statement). 
+Update: Still not working so I tried a new chat and I know I am mapping _currentIndex = index; correctly, inside your onTap handler, the body is hardcoded to your home page SafeArea / SingleChildScrollView. 
+This is basically why the buttons will animate but not change the screen and navigate away. 
+Output: "How to Fix It: To make your bottom navigation actually switch between your Home, History, and Settings screens, your body needs to respond to _currentIndex. You need to isolate your home body: 
+Take all the widgets inside your current body: SafeArea(child: SingleChildScrollView(...)) and move them into a separate helper method (like Widget _buildHomeContent()). This keeps your main build method clean.
+You need to list your tabs: Right above your return Scaffold(), you need to set up a list of your screens (final List<Widget> pages = [_buildHomeContent(...), const HistoryScreen(), const SettingsScreen()];) 
+so your app knows what options it has. You need to swap out the scaffold body: Inside your return Scaffold(...), you need to change your static body: property so it points to an IndexedStack instead, 
+passing it your _currentIndex variable (body: IndexedStack(index: _currentIndex, children: pages)).You need to keep your navigation bar intact: You don't need to change your bottomNavigationBar at all
+because your onTap handler is already successfully updating _currentIndex whenever a user clicks an icon!If you used a normal conditional check or list lookup, switching tabs would destroy the old 
+page and recreate it from scratch.
+Learning: I was thinking of buttons and refering to the hallowween assignment and may have been confused with the navigation as i tried to fix myself. A Scaffold body that is hardcoded to a single static
+view won't change when I tap the low menu. The body had no dynamic list or `IndexedStack` to render different screens even though they were made and main had a tiny job. 
 
 
-Entry 2: SQL neeeds
+Entry 3: SQL neeeds
 
 Date: October 31, 2026
 Tool: Gemini
 Prompt/Query: Why is my SQL not saving when it's tied correctly?
-Outcome: still coming 
+Outcome: still coming. still struggling so i wil start fresh based on sql assignment 08 
 
