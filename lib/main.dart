@@ -1,13 +1,14 @@
+
 import 'package:flutter/material.dart';
-import 'mission_match.dart';
 import 'home_screen.dart';
 
 void main() {
-  runApp(const HomePage());
+  WidgetsFlutterBinding.ensureInitialized();
+  runApp(const MyApp());
 }
 
-class CampusApp extends StatelessWidget {
-  const CampusApp({super.key});
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -15,10 +16,14 @@ class CampusApp extends StatelessWidget {
       title: 'Campus Challenge App',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.white),
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: Colors.deepPurple,
+        ),
         useMaterial3: true,
       ),
       home: const HomeScreen(),
     );
   }
 }
+
+typedef CampusApp = MyApp;
