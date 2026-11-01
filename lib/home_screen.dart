@@ -1,365 +1,446 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+import 'data/database_helper.dart';
+import 'mission_match.dart';
 import 'create_edit_screen.dart';
-import 'settings_screen.dart';
-import 'history_screen.dart';
 import 'challenge_detail_screen.dart';
-
-void main() {
-  runApp(const CampusApp());
-}
-
-class CampusApp extends StatelessWidget {
-  const CampusApp({Key? key}) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'Campus Challenge',
-      theme: ThemeData(
-        primarySwatch: Colors.green,
-        scaffoldBackgroundColor: Colors.white,
-      ),
-  home: const HomeScreen(),
-    );
-  }
-}
+import 'history_screen.dart';
+import 'settings_screen.dart';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({Key? key}) : super(key: key);
+  const HomeScreen({super.key});
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  final DatabaseHelper _database = DatabaseHelper();
 
-  //only adding 5, for now at least 
-  List<Challenge> challenges = [
-    Challenge(
-      'Challenge 1', 
-      'Health', 
-      false,
-      activities: ['Take 3 pictures of all the things you find interesting', 'Share your pics'],
-      description: 'Walk around the campus for 20 minutes and take a picture of 3 things you found interesting.',
-    ),
-    Challenge(
-      'Challenge 2', 
-      'Fun', 
-      false,
-      activities: ['Look on PIN to review clubs', 'Choose a club and RSVP'],
-      description: 'Attend a student club meeting and take a photo.',
-    ),
-    Challenge(
-      'Challenge 3', 
-      'Wellness', 
-      false,
-      description: 'Spend 20 minutes meditating at the campus library quiet zone.',
-    ),
-    Challenge(
-      'Challenge 4', 
-      'Campus', 
-      false,
-      description: 'Visit the library and reserve a study room.',
-    ),
-    Challenge(
-      'Challenge 5', 
-      'Learning', 
-      false,
-      activities: ['Review your syllabus to find info on your proffessors office hours', 'Email your proffessor to inform them you are coming'],
-      description: 'Attend a professors office hours.',
-    ),
-  ];
+  List<ChallengeRecord> _challenges = [];
+  List<ProgressLogRecord> _progressLogs = [];
+  String? _preferredCategory;
 
-  void _addChallenge() async {
-  final newChallenge = await Navigator.push(
-    context,
-    MaterialPageRoute(
-      builder: (context) => const CreateChallengeScreen(),
-    ),
-  );
+  bool _loading = true;
+  bool _hideMissionMatch = false;
+  int _selectedIndex = 0;
 
-  if (newChallenge != null && newChallenge is Challenge) {
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    try {
+      var challenges = await _database.getAllChallenges();
+
+      if (challenges.isEmpty) {
+        await _addStarterChallenges();
+        challenges = await _database.getAllChallenges();
+      }
+
+      final logs = await _database.getAllProgressLogs();
+      final preferences = await SharedPreferences.getInstance();
+
+      if (!mounted) return;
+
+      setState(() {
+        _challenges = challenges;
+        _progressLogs = logs;
+        _preferredCategory =
+            preferences.getString('preferredChallengeCategory');
+        _loading = false;
+      });
+    } catch (error) {
+      if (!mounted) return;
+
+      setState(() => _loading = false);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not load challenges: $error')),
+      );
+    }
+  }
+
+  Future<void> _addStarterChallenges() async {
+    final starters = [
+      ChallengeRecord(
+        title: 'Explore a New Study Spot',
+        category: 'Study',
+        targetUnits: 3,
+        description: 'Find and try three different places to study.',
+      ),
+      ChallengeRecord(
+        title: 'Practice a New Skill',
+        category: 'Creative',
+        targetUnits: 5,
+        description: 'Spend time practicing a skill you want to improve.',
+      ),
+      ChallengeRecord(
+        title: 'Take a Campus Break',
+        category: 'Personal',
+        targetUnits: 3,
+        description: 'Take a few intentional breaks during your week.',
+      ),
+    ];
+
+    for (final starter in starters) {
+      final id = await _database.createChallenge(starter);
+
+      if (starter.title == 'Explore a New Study Spot') {
+        await _database.addActivity(id, 'Visit the library');
+        await _database.addActivity(id, 'Try a quiet campus space');
+        await _database.addActivity(id, 'Study in a new location');
+      } else if (starter.title == 'Practice a New Skill') {
+        await _database.addActivity(id, 'Choose a skill');
+        await _database.addActivity(id, 'Practice for 15 minutes');
+        await _database.addActivity(id, 'Practice again');
+      } else {
+        await _database.addActivity(id, 'Take a walk');
+        await _database.addActivity(id, 'Take a screen break');
+        await _database.addActivity(id, 'Relax without multitasking');
+      }
+    }
+  }
+
+  Future<void> _openCreateScreen() async {
+    final result = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const CreateChallengeScreen(),
+      ),
+    );
+
+    if (result == true) {
+      setState(() => _hideMissionMatch = false);
+      await _loadData();
+    }
+  }
+
+  Future<void> _openEditScreen(ChallengeRecord challenge) async {
+    final result = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => CreateChallengeScreen(challenge: challenge),
+      ),
+    );
+
+    if (result == true) {
+      await _loadData();
+    }
+  }
+
+  Future<void> _openDetails(ChallengeRecord challenge) async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ChallengeDetailScreen(challenge: challenge),
+      ),
+    );
+
+    await _loadData();
+  }
+
+  Future<void> _toggleChallenge(
+    ChallengeRecord challenge,
+    bool completed,
+  ) async {
+    await _database.setChallengeCompleted(challenge.id!, completed);
+    await _loadData();
+  }
+
+  Future<void> _deleteChallenge(ChallengeRecord challenge) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete challenge?'),
+        content: Text('Delete "${challenge.title}"?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    try {
+      await _database.deleteChallenge(challenge.id!);
+      await _loadData();
+    } catch (error) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'This challenge has progress history and cannot be deleted.',
+          ),
+        ),
+      );
+    }
+  }
+
+  MissionMatchResult _getMissionMatchResult() {
+    final challenges = _challenges
+        .where((challenge) => challenge.id != null)
+        .map(
+          (challenge) => MissionMatchChallenge(
+            id: challenge.id!,
+            title: challenge.title,
+            category: challenge.category,
+            targetUnits: challenge.targetUnits,
+          ),
+        )
+        .toList();
+
+    final logs = _progressLogs
+        .where((log) => log.id != null)
+        .map(
+          (log) => MissionMatchProgressLog(
+            id: log.id!,
+            challengeId: log.challengeId,
+            loggedAt: log.loggedAt,
+            units: log.units,
+          ),
+        )
+        .toList();
+
+    return MissionMatch.recommend(
+      challenges: challenges,
+      progressLogs: logs,
+      preferredCategory: _preferredCategory,
+    );
+  }
+
+  Widget _buildMissionMatchCard() {
+    if (_hideMissionMatch) return const SizedBox.shrink();
+
+    final result = _getMissionMatchResult();
+
+    return MissionMatchSuggestionCard(
+      result: result,
+      onViewMission: (suggestion) {
+        final challenge = _challenges.firstWhere(
+          (item) => item.id == suggestion.id,
+        );
+        _openDetails(challenge);
+      },
+      onNotNow: () {
+        setState(() => _hideMissionMatch = true);
+      },
+    );
+  }
+
+  Widget _buildChallengeCard(ChallengeRecord challenge) {
+    return Card(
+      margin: const EdgeInsets.symmetric(
+        horizontal: 12,
+        vertical: 6,
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                Checkbox(
+                  value: challenge.isCompleted,
+                  onChanged: (value) {
+                    _toggleChallenge(challenge, value ?? false);
+                  },
+                ),
+                Expanded(
+                  child: InkWell(
+                    onTap: () => _openDetails(challenge),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          challenge.title,
+                          style: Theme.of(context).textTheme.titleMedium,
+                        ),
+                        Text(
+                          '${challenge.category} • '
+                          'Target: ${challenge.targetUnits}',
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                PopupMenuButton<String>(
+                  onSelected: (value) {
+                    if (value == 'edit') {
+                      _openEditScreen(challenge);
+                    } else if (value == 'delete') {
+                      _deleteChallenge(challenge);
+                    } else if (value == 'details') {
+                      _openDetails(challenge);
+                    }
+                  },
+                  itemBuilder: (context) => const [
+                    PopupMenuItem(
+                      value: 'details',
+                      child: Text('View details'),
+                    ),
+                    PopupMenuItem(
+                      value: 'edit',
+                      child: Text('Edit'),
+                    ),
+                    PopupMenuItem(
+                      value: 'delete',
+                      child: Text('Delete'),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            if (challenge.description.isNotEmpty)
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Padding(
+                  padding: const EdgeInsets.only(left: 48),
+                  child: Text(challenge.description),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHomeContent() {
+    return RefreshIndicator(
+      onRefresh: _loadData,
+      child: ListView(
+        padding: const EdgeInsets.only(bottom: 24),
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 20, 16, 8),
+            child: Text(
+              'Your Mission Board',
+              style: Theme.of(context).textTheme.headlineSmall,
+            ),
+          ),
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16),
+            child: Text(
+              'Small challenges can help you make progress '
+              'one step at a time.',
+            ),
+          ),
+          _buildMissionMatchCard(),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 20, 16, 8),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    'My Challenges',
+                    style: Theme.of(context).textTheme.titleLarge,
+                  ),
+                ),
+                FilledButton.icon(
+                  onPressed: _openCreateScreen,
+                  icon: const Icon(Icons.add),
+                  label: const Text('Add'),
+                ),
+              ],
+            ),
+          ),
+          if (_challenges.isEmpty)
+            const Padding(
+              padding: EdgeInsets.all(24),
+              child: Center(
+                child: Text('No challenges yet. Add your first one!'),
+              ),
+            )
+          else
+            ..._challenges.map(_buildChallengeCard),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _openSettings() async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const SettingsScreen()),
+    );
+
+    final preferences = await SharedPreferences.getInstance();
+
+    if (!mounted) return;
+
     setState(() {
-      challenges.add(newChallenge);
+      _preferredCategory =
+          preferences.getString('preferredChallengeCategory');
+      _hideMissionMatch = false;
     });
   }
-}
-  
-  void _doneChallenge(int index) {
-    setState(() {
-      challenges[index].isCompleted = !challenges[index].isCompleted;
-    });
+
+  Future<void> _openHistory() async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const HistoryScreen()),
+    );
+    await _loadData();
   }
 
   @override
   Widget build(BuildContext context) {
-    int completedCount = 0;
-    int totalCount = challenges.length;
-    double progressValue = 0.0;
-
-    for (var challenge in challenges) {
-      if (challenge.isCompleted == true) {
-           completedCount++;
-      }
+    if (_loading) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Campus Challenge')),
+        body: const Center(child: CircularProgressIndicator()),
+      );
     }
-
-    if (totalCount > 0) {
-      progressValue = completedCount / totalCount; } else {
-      progressValue = 0.0;
-    }
-
 
     return Scaffold(
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
-          child: Column(
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    'Campus Challenge',
-                    style: TextStyle(
-                      fontSize: 30,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black,
-                    ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.person_outline, size: 28),
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const CreateChallengeScreen(),
-                  ),
-                        );
-                      },
-                  ),
-                ],
-              ),
-              const SizedBox(height: 20),
-
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.lightGreen,  
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Column(
-                      children: const [
-                        Text(
-                          'Hello!',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.black,
-                          ),
-                        ),
-                        SizedBox(height: 4),
-                        Text(
-                          'Ready to knock out some challenges?',
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: Colors.black,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const Icon(
-                      Icons.wb_sunny_rounded,
-                      color: Colors.amber,
-                      size: 34,
-             ),
-            ],
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.teal,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Column(
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text(
-                          'Challenge Score',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.black87,
-                          ),
-                        ),
-                        const Icon(
-                          Icons.check,
-                          color: Colors.green,
-                          size: 22,
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      '$completedCount / $totalCount Challenges completed',
-                      style: const TextStyle(
-                        fontSize: 13,
-                        color: Colors.black,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: LinearProgressIndicator(
-                        value: progressValue,
-                        backgroundColor: Colors.white,
-                        valueColor: const AlwaysStoppedAnimation<Color>(Colors.green),
-                        minHeight: 6,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.yellow,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-               child: Column(
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: const [
-                      Text(
-                        'Active Challenges',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black87,
-                        ),
-                      ),
-                      Icon(
-                        Icons.menu_rounded,
-                        color: Colors.blue,
-                        size: 22,
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 12),
-
-                  TextButton.icon(
-                    onPressed: _addChallenge,
-                    icon: const Icon(Icons.add),
-                    label: const Text('Add a challenge'),
-                  ),
-
-                  const SizedBox(height: 12),
-
-                  Column(
-                    children: challenges.asMap().entries.map((entry) {
-                      int index = entry.key;
-                      Challenge challenge = entry.value;
-                      bool isCompleted = challenge.isCompleted;
-
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 10.0),
-                        child: InkWell(
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => ChallengeDetailScreen(challenge: challenge,
-                                ),
-                              ),
-                            );
-                            setState(() {});
-                          },
-                          child: Container(
-                            decoration: BoxDecoration(
-                              color: Colors.white, 
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(
-                                color: isCompleted ? Colors.green : Colors.transparent,
-                              ),
-                            ),
-                            child: Row(
-                              children: [
-                                GestureDetector(
-                                  onTap: () => _doneChallenge(index),
-                                  child: Icon(
-                                    isCompleted ? Icons.check_box : Icons.check_box_outline_blank,
-                                    color: isCompleted ? Colors.green : Colors.grey,
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                Text(
-                                  challenge.title,
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    decoration: isCompleted ? TextDecoration.lineThrough : TextDecoration.none, 
-                                    color: isCompleted ? Colors.grey : Colors.black,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),  ),
-                      );
-                    }).toList(),
-                  )
-                ],
-   ),),
-    ],
-        ),
+      appBar: AppBar(
+        title: const Text('Campus Challenge'),
+        actions: [
+          IconButton(
+            onPressed: _openSettings,
+            icon: const Icon(Icons.settings_outlined),
+          ),
+        ],
       ),
-    ),
+      body: _buildHomeContent(),
+      bottomNavigationBar: NavigationBar(
+        selectedIndex: _selectedIndex,
+        onDestinationSelected: (index) {
+          setState(() => _selectedIndex = index);
 
-// bottom menu to add all the pages 
-  bottomNavigationBar: 
-  Container(
-  color: Colors.white,
-  padding: const EdgeInsets.symmetric(vertical: 10),
-  child: Row(
-    mainAxisAlignment: MainAxisAlignment.spaceAround,
-    children: [
-      IconButton(
-        icon: const Icon(Icons.home, size: 32),
-        onPressed: () {
-
+          if (index == 1) {
+            _openHistory();
+          } else if (index == 2) {
+            _openSettings();
+          }
         },
+        destinations: const [
+          NavigationDestination(
+            icon: Icon(Icons.home_outlined),
+            selectedIcon: Icon(Icons.home),
+            label: 'Home',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.history),
+            label: 'History',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.settings_outlined),
+            label: 'Settings',
+          ),
+        ],
       ),
-      IconButton(
-        icon: const Icon(Icons.access_time_outlined, size: 32),
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const HistoryScreen()),
-          );
-        },
-      ),
-      IconButton(
-        icon: const Icon(Icons.settings_outlined, size: 32),
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const SettingsScreen()),
-          );
-        },
-      ),
-    ],
-  ),
-  ),
-  );
+    );
   }
 }
