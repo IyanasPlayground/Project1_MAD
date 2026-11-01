@@ -266,6 +266,16 @@ class DatabaseHelper {
 
     return (result.first['total'] as num).toInt();
   }
+
+  Future<int> deleteProgressLog(int id) async {
+    final db = await database;
+
+    return await db.delete(
+      'progress_logs',
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  }
 }
 
 class ChallengeRecord {
